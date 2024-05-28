@@ -55,5 +55,29 @@
   },
   "engines": {
     "node": ">= 22.0.0"
+  },
+  "release": {
+    "branches": [
+      "master"
+    ],
+    "plugins": [
+      "@semantic-release/commit-analyzer",
+      "@semantic-release/release-notes-generator",
+      "@semantic-release/github",
+      [
+        "@semantic-release-plus/docker",
+        {
+          "name": "docker.io/restorecommerce/identity-srv",
+          "skipLogin": true
+        }
+      ],
+      [
+        "@semantic-release-plus/docker",
+        {
+          "name": "ghcr.io/restorecommerce/identity-srv",
+          "skipLogin": true
+        }
+      ]
+    ]
   }
 }
