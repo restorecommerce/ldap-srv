@@ -1,0 +1,13 @@
+{
+  "logger": {
+    "console": {
+      "handleExceptions": false,
+      "level": "silly",
+      "colorize": true,
+      "prettyPrint": true
+    }
+  },
+  "ldap": {
+    "host": "127.0.0.1"
+  }
+}

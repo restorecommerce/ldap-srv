@@ -1,0 +1,6 @@
+{
+  "extends": "./node_modules/@restorecommerce/dev/tsconfig.json",
+  "include": [
+    "./src/**/*.ts"
+  ]
+}

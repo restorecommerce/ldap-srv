@@ -1,0 +1,18 @@
+= LDAP Service
+
+https://github.com/restorecommerce/ldap-srv/actions/workflows/build.yaml[image:https://img.shields.io/github/actions/workflow/status/restorecommerce/ldap-srv/build.yaml?style=flat-square[Build Status]]
+https://depfu.com/repos/github/restorecommerce/ldap-srv?branch=master[image:https://img.shields.io/depfu/dependencies/github/restorecommerce/ldap-srv?style=flat-square[Dependencies]]
+https://coveralls.io/github/restorecommerce/ldap-srv?branch=master[image:https://img.shields.io/coveralls/github/restorecommerce/ldap-srv/master.svg?style=flat-square[Coverage Status]]
+
+A microservice for an LDAP frontend.
+
+Please consult the documentation for using it:
+
+- *link:https://docs.restorecommerce.io/ldap-srv/index.html[Usage]*
+- *link:https://docs.restorecommerce.io/architecture/index.html[Restorecommerce Architecture]*
+
+Part of link:https://github.com/restorecommerce[Restorecommerce].
+
+== Contributing
+
+Read more in link:{docdir}/CONTRIBUTING.md[CONTRIBUTING.md]

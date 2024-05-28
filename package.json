@@ -1,0 +1,58 @@
+{
+  "name": "@restorecommerce/ldap-srv",
+  "version": "1.0.0",
+  "description": "Restorecommerce LDAP service",
+  "main": "lib/start.js",
+  "author": "n-fuse GmbH",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/restorecommerce/ldap-srv.git"
+  },
+  "license": "MIT",
+  "keywords": [
+    "restore",
+    "commerce",
+    "microservice",
+    "identity",
+    "srv"
+  ],
+  "type": "module",
+  "scripts": {
+    "build": "npm-run-all build:clean build:tsc",
+    "build:clean": "rimraf lib",
+    "build:tsc": "esbuild ./src/start.ts --bundle --platform=node --outfile=lib/start.js --minify --tree-shaking=true --sourcemap=inline",
+    "dev": "cross-env NODE_ENV=development nodemon --watch './src/**/*.ts' --exec node --loader ts-node/esm ./src/start.ts",
+    "start": "node lib/start.js",
+    "test": "vitest",
+    "lint": "eslint"
+  },
+  "dependencies": {
+    "@restorecommerce/logger": "^1.2.10",
+    "@restorecommerce/rc-grpc-clients": "^5.1.29",
+    "@restorecommerce/service-config": "^1.0.12",
+    "@restorecommerce/grpc-client": "^2.2.1",
+    "ldapjs": "^3.0.7",
+    "nconf": "^0.12.1"
+  },
+  "devDependencies": {
+    "@restorecommerce/dev": "^0.0.11",
+    "@types/ldapjs": "^3.0.6",
+    "@types/nconf": "^0.10.6",
+    "@typescript-eslint/eslint-plugin": "^5.62.0",
+    "@typescript-eslint/eslint-plugin-tslint": "^5.62.0",
+    "@typescript-eslint/parser": "^5.62.0",
+    "cross-env": "^7.0.3",
+    "esbuild": "^0.21.4",
+    "eslint": "^8.57.0",
+    "eslint-plugin-prefer-arrow-functions": "^3.3.2",
+    "nodemon": "^3.1.1",
+    "rimraf": "^5.0.7",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.4.5",
+    "vitest": "^1.6.0",
+    "@vitest/coverage-v8": "^1.6.0"
+  },
+  "engines": {
+    "node": ">= 22.0.0"
+  }
+}

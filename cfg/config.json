@@ -1,0 +1,34 @@
+{
+  "logger": {
+    "console": {
+      "handleExceptions": false,
+      "level": "info",
+      "colorize": true,
+      "prettyPrint": true
+    }
+  },
+  "client": {
+    "user": {
+      "address": "localhost:50051"
+    }
+  },
+  "ldap": {
+    "host": "0.0.0.0",
+    "port": 1389,
+    "tls": {
+      "certificate": "",
+      "key": ""
+    },
+    "base_dn": "dc=restorecommerce,dc=io",
+    "bind": {
+      "dn": "cn=admin,ou=Users",
+      "password": "demo"
+    },
+    "removed_fields": [
+      "password",
+      "passwordHash"
+    ],
+    "user_cn_field": "name"
+  },
+  "apiKey": "HELLO"
+}
