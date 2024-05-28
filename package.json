@@ -68,14 +68,14 @@
       [
         "@semantic-release-plus/docker",
         {
-          "name": "docker.io/restorecommerce/identity-srv",
+          "name": "docker.io/restorecommerce/ldap-srv",
           "skipLogin": true
         }
       ],
       [
         "@semantic-release-plus/docker",
         {
-          "name": "ghcr.io/restorecommerce/identity-srv",
+          "name": "ghcr.io/restorecommerce/ldap-srv",
           "skipLogin": true
         }
       ]
