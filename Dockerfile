@@ -35,7 +35,7 @@ COPY package-lock.json package-lock.json
 COPY --chown=node:node . $APP_HOME
 COPY --chown=node:node --from=build $APP_HOME/lib $APP_HOME/lib
 
-EXPOSE 50051
+EXPOSE 389
 
 USER node
 

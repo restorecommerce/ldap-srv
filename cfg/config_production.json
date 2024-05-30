@@ -1,0 +1,23 @@
+{
+  "logger": {
+    "elasticsearch": {
+      "level": "error",
+      "clientOpts": {
+        "node": "http://elasticsearch:9200"
+      },
+      "dataStream": true,
+      "source": "ldap-srv"
+    },
+    "console": {
+      "handleExceptions": false,
+      "level": "silly",
+      "colorize": true,
+      "prettyPrint": true
+    }
+  },
+  "client": {
+    "user": {
+      "address": "identity-srv:50051"
+    }
+  }
+}
