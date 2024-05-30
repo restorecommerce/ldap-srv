@@ -10,7 +10,7 @@
     },
     "console": {
       "handleExceptions": false,
-      "level": "silly",
+      "level": "info",
       "colorize": true,
       "prettyPrint": true
     }
