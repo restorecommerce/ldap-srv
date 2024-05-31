@@ -33,7 +33,7 @@ export const mountPaths = (cfg: Provider, server: Server, ids: UserServiceClient
 const sendUsers = async (ids: UserServiceClient, cfg: Provider, name?: string): Promise<any[]> => {
   const userList = await ids.find({
     subject: {
-      token: cfg.get('apiKey')
+      token: cfg.get('authentication:apiKey')
     },
     name
   }).catch(() => UserListResponse.fromPartial({}));

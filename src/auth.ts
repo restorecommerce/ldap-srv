@@ -33,7 +33,7 @@ export const testCredentials = async (cfg: Provider, dn: ldapjs.DN, credentials:
   } else {
     const users = await ids.find({
       subject: {
-        token: cfg.get('apiKey')
+        token: cfg.get('authentication:apiKey')
       },
       name: identifier
     }).catch((err) => {
