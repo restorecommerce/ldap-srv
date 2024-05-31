@@ -30,6 +30,55 @@ export const mountPaths = (cfg: Provider, server: Server, ids: UserServiceClient
   baseSearch(cfg, server, ids, logger);
 };
 
+const sendUsers = async (req: NewSearchRequest, res: any, ids: UserServiceClient, cfg: Provider, name?: string) => {
+  const userList = await ids.find({
+    subject: {
+      token: cfg.get('apiKey')
+    },
+    name
+  }).catch(() => UserListResponse.fromPartial({}));
+
+  if (!userList || !userList.items || userList.items.length === 0) {
+    return;
+  }
+
+  for (const user of userList.items) {
+    const attributes = {
+      cn: (user.payload as any)[cfg.get('ldap:user_cn_field')],
+      objectClass: ['top', 'person', 'organizationalPerson', 'inetOrgPerson', 'user', 'posixAccount'],
+      ...user.payload,
+      displayName: user.payload.firstName + ' ' + user.payload.lastName,
+      homeDirectory: `/home/${user.payload.id}`,
+      uid: user.payload.id,
+    };
+
+    if (req.filter && !req.filter.matches(withLowercase(attributes))) {
+      continue;
+    }
+
+    for (const field of cfg.get('ldap:removed_fields')) {
+      delete (attributes as any)[field];
+    }
+
+    for (let key of Object.keys(attributes)) {
+      if (typeof (attributes as any)[key] === 'object') {
+        if (Array.isArray((attributes as any)[key])) {
+          if (!((attributes as any)[key].length > 0 && typeof (attributes as any)[key][0] !== 'object')) {
+            (attributes as any)[key] = (attributes as any)[key].map(JSON.stringify);
+          }
+        } else {
+          (attributes as any)[key] = JSON.stringify((attributes as any)[key]);
+        }
+      }
+    }
+
+    res.send({
+      dn: `cn=${(user.payload as any)[cfg.get('ldap:user_cn_field')]},ou=users,${cfg.get('ldap:base_dn')}`,
+      attributes
+    });
+  }
+}
+
 const bind = (cfg: Provider, server: Server, ids: UserServiceClient, logger: Logger) => {
   server.bind(cfg.get('ldap:base_dn'), async (req: any, res: any, next: any) => {
     let dn = (req.dn instanceof ldapjs.DN) ? req.dn : ldapjs.parseDN(req.dn);
@@ -65,7 +114,7 @@ const rootSearch = (cfg: Provider, server: Server, ids: UserServiceClient, logge
 const subschemaSearch = (cfg: Provider, server: Server, ids: UserServiceClient, logger: Logger) => {
   server.search('cn=subschema', authorize(cfg, ids, logger), allAttributeFix(), (req: NewSearchRequest, res: any, next: any) => {
     res.send({
-      dn: req.dn.toString(),
+      dn: 'cn=subschema',
       attributes: {
         objectClass: ['top', 'subSchema']
       }
@@ -75,33 +124,42 @@ const subschemaSearch = (cfg: Provider, server: Server, ids: UserServiceClient, 
 };
 
 const baseSearch = (cfg: Provider, server: Server, ids: UserServiceClient, logger: Logger) => {
-  server.search(cfg.get('ldap:base_dn'), authorize(cfg, ids, logger), allAttributeFix(), (req: NewSearchRequest, res: any, next: any) => {
+  server.search(cfg.get('ldap:base_dn'), authorize(cfg, ids, logger), allAttributeFix(), async (req: NewSearchRequest, res: any, next: any) => {
+    const base = {
+      dn: cfg.get('ldap:base_dn'),
+      attributes: {
+        ...commonAttributes,
+        objectClass: ['top'],
+        namingContexts: [cfg.get('ldap:base_dn')],
+        rootDomainNamingContext: [cfg.get('ldap:base_dn')],
+      }
+    };
+
+    const ouUsers = {
+      dn: 'ou=users,' + cfg.get('ldap:base_dn'),
+      attributes: {
+        objectClass: ['top', 'nsContainer'],
+        distinguishedName: ['ou=users,' + req.dn.toString()],
+        commonName: ['users']
+      }
+    };
+
     switch (req.scope as any) {
       case 0:
       case 'base':
-        res.send({
-          dn: req.dn.toString(),
-          attributes: {
-            ...commonAttributes,
-            objectClass: ['top'],
-            namingContexts: [cfg.get('ldap:base_dn')],
-            rootDomainNamingContext: [cfg.get('ldap:base_dn')],
-          }
-        });
+        res.send(base);
         return res.end();
       case 1:
       case 'one':
-        res.send({
-          dn: 'ou=users,' + req.dn.toString(),
-          attributes: {
-            objectClass: ['top', 'nsContainer'],
-            distinguishedName: ['ou=users,' + req.dn.toString()],
-            commonName: ['users']
-          }
-        });
+        res.send(ouUsers);
         return res.end();
       case 2:
       case 'sub':
+        if (req.dn.toString() === cfg.get('ldap:base_dn')) {
+          res.send(base);
+          res.send(ouUsers);
+          await sendUsers(req, res, ids, cfg);
+        }
         break;
     }
 
@@ -111,67 +169,18 @@ const baseSearch = (cfg: Provider, server: Server, ids: UserServiceClient, logge
 
 const usersSearch = (cfg: Provider, server: Server, ids: UserServiceClient, logger: Logger) => {
   server.search('ou=users,' + cfg.get('ldap:base_dn'), authorize(cfg, ids, logger), allAttributeFix(), async (req: NewSearchRequest, res: any, next: any) => {
-    const sendUsers = async (name?: string) => {
-      const userList = await ids.find({
-        subject: {
-          token: cfg.get('apiKey')
-        },
-        name
-      }).catch(() => UserListResponse.fromPartial({}));
-
-      if (!userList || !userList.items || userList.items.length === 0) {
-        return;
-      }
-
-      for (const user of userList.items) {
-        const attributes = {
-          cn: (user.payload as any)[cfg.get('ldap:user_cn_field')],
-          objectClass: ['top', 'person', 'organizationalPerson', 'inetOrgPerson', 'user', 'posixAccount'],
-          ...user.payload,
-          displayName: user.payload.firstName + ' ' + user.payload.lastName,
-          homeDirectory: `/home/${user.payload.id}`,
-          uid: user.payload.id,
-        };
-
-        if (req.filter && !req.filter.matches(withLowercase(attributes))) {
-          continue;
-        }
-
-        for (const field of cfg.get('ldap:removed_fields')) {
-          delete (attributes as any)[field];
-        }
-
-        for (let key of Object.keys(attributes)) {
-          if (typeof (attributes as any)[key] === 'object') {
-            if (Array.isArray((attributes as any)[key])) {
-              if (!((attributes as any)[key].length > 0 && typeof (attributes as any)[key][0] !== 'object')) {
-                (attributes as any)[key] = (attributes as any)[key].map(JSON.stringify);
-              }
-            } else {
-              (attributes as any)[key] = JSON.stringify((attributes as any)[key]);
-            }
-          }
-        }
-
-        res.send({
-          dn: `cn=${(user.payload as any)[cfg.get('ldap:user_cn_field')]},ou=users,${cfg.get('ldap:base_dn')}`,
-          attributes
-        });
-      }
-    }
-
     switch (req.scope as any) {
       case 0:
       case 'base':
         if (req.dn.childOf('ou=users,' + cfg.get('ldap:base_dn'))) {
           const name = req.dn.clone().shift().toString().substring(3);
-          await sendUsers(name);
+          await sendUsers(req, res, ids, cfg, name);
         } else {
           res.send({
-            dn: req.dn.toString(),
+            dn: 'ou=users,' + cfg.get('ldap:base_dn'),
             attributes: {
               objectClass: ['top', 'nsContainer'],
-              distinguishedName: [req.dn.toString()],
+              distinguishedName: ['ou=users,' + cfg.get('ldap:base_dn')],
               commonName: ['users']
             }
           });
@@ -180,13 +189,13 @@ const usersSearch = (cfg: Provider, server: Server, ids: UserServiceClient, logg
       case 1:
       case 'one':
         if (req.dn.toString() === 'ou=users,' + cfg.get('ldap:base_dn')) {
-          await sendUsers();
+          await sendUsers(req, res, ids, cfg);
         }
         return res.end();
       case 2:
       case 'sub':
         if (req.dn.toString() === 'ou=users,' + cfg.get('ldap:base_dn')) {
-          await sendUsers();
+          await sendUsers(req, res, ids, cfg);
         }
         return res.end();
     }
