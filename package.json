@@ -2,7 +2,7 @@
   "name": "@restorecommerce/ldap-srv",
   "version": "1.0.0",
   "description": "Restorecommerce LDAP service",
-  "main": "lib/start.js",
+  "main": "lib/start.cjs",
   "author": "n-fuse GmbH",
   "repository": {
     "type": "git",
@@ -22,7 +22,7 @@
     "build:clean": "rimraf lib",
     "build:tsc": "esbuild ./src/start.ts --bundle --platform=node --outfile=lib/start.cjs --minify --tree-shaking=true --sourcemap=inline",
     "dev": "cross-env NODE_ENV=development nodemon --watch './src/**/*.ts' --exec node --loader ts-node/esm ./src/start.ts",
-    "start": "node lib/start.js",
+    "start": "node lib/start.cjs",
     "test": "vitest",
     "lint": "eslint"
   },
