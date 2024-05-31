@@ -23,14 +23,13 @@ RUN npm run build
 ### Deployment
 FROM base as deployment
 
-ENV NO_UPDATE_NOTIFIER=true
-
 USER node
 ARG APP_HOME=/home/node/srv
 WORKDIR $APP_HOME
 
 COPY package.json package.json
 COPY package-lock.json package-lock.json
+RUN npm ci --production
 
 COPY --chown=node:node . $APP_HOME
 COPY --chown=node:node --from=build $APP_HOME/lib $APP_HOME/lib

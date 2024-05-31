@@ -20,7 +20,7 @@
   "scripts": {
     "build": "npm-run-all build:clean build:tsc",
     "build:clean": "rimraf lib",
-    "build:tsc": "esbuild ./src/start.ts --bundle --platform=node --outfile=lib/start.cjs --minify --tree-shaking=true --sourcemap=inline",
+    "build:tsc": "esbuild ./src/start.ts --bundle --platform=node --outfile=lib/start.cjs --minify --tree-shaking=true --sourcemap=inline --packages=external",
     "dev": "cross-env NODE_ENV=development nodemon --watch './src/**/*.ts' --exec node --loader ts-node/esm ./src/start.ts",
     "start": "node lib/start.cjs",
     "test": "vitest",
