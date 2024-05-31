@@ -53,6 +53,11 @@ const sendUsers = async (ids: UserServiceClient, cfg: Provider, name?: string): 
       uid: user.payload.id,
     };
 
+    // Some servers just want one of these
+    for (let idAttribute of ['entryuuid', 'nsuniqueid', 'objectguid', 'guid', 'ipauniqueid']) {
+      (attributes as any)[idAttribute] = user.payload.id;
+    }
+
     for (const field of cfg.get('ldap:removed_fields')) {
       delete (attributes as any)[field];
     }
