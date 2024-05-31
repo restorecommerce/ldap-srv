@@ -180,4 +180,21 @@ describe('search', () => {
       values: ['John Doe']
     });
   });
+
+  it('should find all sub-items', async () => {
+    const response = await new Promise<SearchResponse>(r => {
+      mockFind(server);
+      const client = getClient(true);
+      client.search(server.cfg.get('ldap:base_dn'), {
+        scope: 'sub'
+      }, async (err, res) => {
+        r(await readResponse(res));
+      })
+    });
+
+    console.log(response.entries)
+    expect(response.error).toBe(undefined);
+    expect(response.entries).not.toBe(undefined);
+    expect(response.entries).lengthOf(5);
+  });
 });
