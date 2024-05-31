@@ -14,7 +14,7 @@
   },
   "ldap": {
     "host": "0.0.0.0",
-    "port": 389,
+    "port": 1389,
     "tls": {
       "certificate": "",
       "key": ""
