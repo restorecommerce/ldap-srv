@@ -1,8 +1,12 @@
 import { type Server, default as ldapjs, SearchRequest } from "ldapjs";
 import { Provider } from "nconf";
-import { UserServiceClient } from "@restorecommerce/rc-grpc-clients/dist/generated/io/restorecommerce/user.js";
+import {
+  UserListResponse,
+  UserServiceClient
+} from "@restorecommerce/rc-grpc-clients/dist/generated/io/restorecommerce/user.js";
 import { authorize, testCredentials } from "./auth.js";
 import { allAttributeFix, withLowercase } from "./utils.js";
+import { Logger } from "@restorecommerce/logger";
 
 interface NewSearchRequest extends SearchRequest {
   dn: ldapjs.DN;
@@ -18,18 +22,18 @@ const commonAttributes: Record<string, string[]> = {
   entryDN: [''],
 };
 
-export const mountPaths = (cfg: Provider, server: Server, ids: UserServiceClient) => {
-  bind(cfg, server, ids);
-  rootSearch(cfg, server, ids);
-  subschemaSearch(cfg, server, ids);
-  usersSearch(cfg, server, ids);
-  baseSearch(cfg, server, ids);
+export const mountPaths = (cfg: Provider, server: Server, ids: UserServiceClient, logger: Logger) => {
+  bind(cfg, server, ids, logger);
+  rootSearch(cfg, server, ids, logger);
+  subschemaSearch(cfg, server, ids, logger);
+  usersSearch(cfg, server, ids, logger);
+  baseSearch(cfg, server, ids, logger);
 };
 
-const bind = (cfg: Provider, server: Server, ids: UserServiceClient) => {
+const bind = (cfg: Provider, server: Server, ids: UserServiceClient, logger: Logger) => {
   server.bind(cfg.get('ldap:base_dn'), async (req: any, res: any, next: any) => {
     let dn = (req.dn instanceof ldapjs.DN) ? req.dn : ldapjs.parseDN(req.dn);
-    if (await testCredentials(cfg, dn, req.credentials, ids)) {
+    if (await testCredentials(cfg, dn, req.credentials, ids, logger)) {
       res.end();
       return next();
     }
@@ -38,8 +42,8 @@ const bind = (cfg: Provider, server: Server, ids: UserServiceClient) => {
   });
 };
 
-const rootSearch = (cfg: Provider, server: Server, ids: UserServiceClient) => {
-  server.search('', authorize(cfg, ids), allAttributeFix(), (req: NewSearchRequest, res: any, next: any) => {
+const rootSearch = (cfg: Provider, server: Server, ids: UserServiceClient, logger: Logger) => {
+  server.search('', authorize(cfg, ids, logger), allAttributeFix(), (req: NewSearchRequest, res: any, next: any) => {
     if (req.dn && req.dn.toString() !== '') {
       return next();
     }
@@ -58,8 +62,8 @@ const rootSearch = (cfg: Provider, server: Server, ids: UserServiceClient) => {
   })
 };
 
-const subschemaSearch = (cfg: Provider, server: Server, ids: UserServiceClient) => {
-  server.search('cn=subschema', authorize(cfg, ids), allAttributeFix(), (req: NewSearchRequest, res: any, next: any) => {
+const subschemaSearch = (cfg: Provider, server: Server, ids: UserServiceClient, logger: Logger) => {
+  server.search('cn=subschema', authorize(cfg, ids, logger), allAttributeFix(), (req: NewSearchRequest, res: any, next: any) => {
     res.send({
       dn: req.dn.toString(),
       attributes: {
@@ -70,8 +74,8 @@ const subschemaSearch = (cfg: Provider, server: Server, ids: UserServiceClient) 
   })
 };
 
-const baseSearch = (cfg: Provider, server: Server, ids: UserServiceClient) => {
-  server.search(cfg.get('ldap:base_dn'), authorize(cfg, ids), allAttributeFix(), (req: NewSearchRequest, res: any, next: any) => {
+const baseSearch = (cfg: Provider, server: Server, ids: UserServiceClient, logger: Logger) => {
+  server.search(cfg.get('ldap:base_dn'), authorize(cfg, ids, logger), allAttributeFix(), (req: NewSearchRequest, res: any, next: any) => {
     switch (req.scope as any) {
       case 0:
       case 'base':
@@ -105,15 +109,19 @@ const baseSearch = (cfg: Provider, server: Server, ids: UserServiceClient) => {
   })
 };
 
-const usersSearch = (cfg: Provider, server: Server, ids: UserServiceClient) => {
-  server.search('ou=users,' + cfg.get('ldap:base_dn'), authorize(cfg, ids), allAttributeFix(), async (req: NewSearchRequest, res: any, next: any) => {
+const usersSearch = (cfg: Provider, server: Server, ids: UserServiceClient, logger: Logger) => {
+  server.search('ou=users,' + cfg.get('ldap:base_dn'), authorize(cfg, ids, logger), allAttributeFix(), async (req: NewSearchRequest, res: any, next: any) => {
     const sendUsers = async (name?: string) => {
       const userList = await ids.find({
         subject: {
           token: cfg.get('apiKey')
         },
         name
-      });
+      }).catch(() => UserListResponse.fromPartial({}));
+
+      if (!userList || !userList.items || userList.items.length === 0) {
+        return;
+      }
 
       for (const user of userList.items) {
         const attributes = {

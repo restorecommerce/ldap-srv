@@ -35,7 +35,7 @@ export class Worker {
       logger: this.logger,
     }, UserServiceDefinition, channel)
 
-    mountPaths(this.cfg, this.server, this.ids);
+    mountPaths(this.cfg, this.server, this.ids, this.logger);
 
     await new Promise<void>((r) => {
       this.server.listen(this.cfg.get('ldap:port'), this.cfg.get('ldap:host'), () => {
