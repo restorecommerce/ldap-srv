@@ -30,7 +30,7 @@ export const mountPaths = (cfg: Provider, server: Server, ids: UserServiceClient
   baseSearch(cfg, server, ids, logger);
 };
 
-const sendUsers = async (req: NewSearchRequest, res: any, ids: UserServiceClient, cfg: Provider, name?: string) => {
+const sendUsers = async (ids: UserServiceClient, cfg: Provider, name?: string): Promise<any[]> => {
   const userList = await ids.find({
     subject: {
       token: cfg.get('apiKey')
@@ -42,6 +42,7 @@ const sendUsers = async (req: NewSearchRequest, res: any, ids: UserServiceClient
     return;
   }
 
+  const toSend: any[] = [];
   for (const user of userList.items) {
     const attributes = {
       cn: (user.payload as any)[cfg.get('ldap:user_cn_field')],
@@ -51,10 +52,6 @@ const sendUsers = async (req: NewSearchRequest, res: any, ids: UserServiceClient
       homeDirectory: `/home/${user.payload.id}`,
       uid: user.payload.id,
     };
-
-    if (req.filter && !req.filter.matches(withLowercase(attributes))) {
-      continue;
-    }
 
     for (const field of cfg.get('ldap:removed_fields')) {
       delete (attributes as any)[field];
@@ -72,11 +69,13 @@ const sendUsers = async (req: NewSearchRequest, res: any, ids: UserServiceClient
       }
     }
 
-    res.send({
+    toSend.push({
       dn: `cn=${(user.payload as any)[cfg.get('ldap:user_cn_field')]},ou=users,${cfg.get('ldap:base_dn')}`,
       attributes
     });
   }
+
+  return toSend;
 }
 
 const bind = (cfg: Provider, server: Server, ids: UserServiceClient, logger: Logger) => {
@@ -125,6 +124,8 @@ const subschemaSearch = (cfg: Provider, server: Server, ids: UserServiceClient, 
 
 const baseSearch = (cfg: Provider, server: Server, ids: UserServiceClient, logger: Logger) => {
   server.search(cfg.get('ldap:base_dn'), authorize(cfg, ids, logger), allAttributeFix(), async (req: NewSearchRequest, res: any, next: any) => {
+    const toSend: any[] = [];
+
     const base = {
       dn: cfg.get('ldap:base_dn'),
       attributes: {
@@ -147,21 +148,27 @@ const baseSearch = (cfg: Provider, server: Server, ids: UserServiceClient, logge
     switch (req.scope as any) {
       case 0:
       case 'base':
-        res.send(base);
-        return res.end();
+        toSend.push(base);
+        break;
       case 1:
       case 'one':
-        res.send(ouUsers);
-        return res.end();
+        toSend.push(ouUsers);
+        break;
       case 2:
       case 'sub':
         if (req.dn.toString() === cfg.get('ldap:base_dn')) {
-          res.send(base);
-          res.send(ouUsers);
-          await sendUsers(req, res, ids, cfg);
+          toSend.push(base);
+          toSend.push(ouUsers);
+          toSend.push(...await sendUsers(ids, cfg));
         }
         break;
     }
+
+    toSend.forEach(entity => {
+      if (!req.filter || req.filter.matches(withLowercase(entity.attributes))) {
+        res.send(entity);
+      }
+    });
 
     return res.end();
   })
@@ -169,14 +176,16 @@ const baseSearch = (cfg: Provider, server: Server, ids: UserServiceClient, logge
 
 const usersSearch = (cfg: Provider, server: Server, ids: UserServiceClient, logger: Logger) => {
   server.search('ou=users,' + cfg.get('ldap:base_dn'), authorize(cfg, ids, logger), allAttributeFix(), async (req: NewSearchRequest, res: any, next: any) => {
+    const toSend: any[] = [];
+
     switch (req.scope as any) {
       case 0:
       case 'base':
         if (req.dn.childOf('ou=users,' + cfg.get('ldap:base_dn'))) {
           const name = req.dn.clone().shift().toString().substring(3);
-          await sendUsers(req, res, ids, cfg, name);
+          toSend.push(...await sendUsers(ids, cfg, name));
         } else {
-          res.send({
+          toSend.push({
             dn: 'ou=users,' + cfg.get('ldap:base_dn'),
             attributes: {
               objectClass: ['top', 'nsContainer'],
@@ -185,20 +194,26 @@ const usersSearch = (cfg: Provider, server: Server, ids: UserServiceClient, logg
             }
           });
         }
-        return res.end();
+        break;
       case 1:
       case 'one':
         if (req.dn.toString() === 'ou=users,' + cfg.get('ldap:base_dn')) {
-          await sendUsers(req, res, ids, cfg);
+          toSend.push(...await sendUsers(ids, cfg));
         }
-        return res.end();
+        break;
       case 2:
       case 'sub':
         if (req.dn.toString() === 'ou=users,' + cfg.get('ldap:base_dn')) {
-          await sendUsers(req, res, ids, cfg);
+          toSend.push(...await sendUsers(ids, cfg));
         }
-        return res.end();
+        break;
     }
+
+    toSend.forEach(entity => {
+      if (!req.filter || req.filter.matches(withLowercase(entity.attributes))) {
+        res.send(entity);
+      }
+    });
 
     return res.end();
   })
