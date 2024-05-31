@@ -30,5 +30,7 @@
     ],
     "user_cn_field": "name"
   },
-  "apiKey": "HELLO"
+  "authentication": {
+    "apiKey": "HELLO"
+  }
 }
