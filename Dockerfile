@@ -1,5 +1,5 @@
 ### Build
-FROM node:22.0-alpine3.19 as base
+FROM node:22.2.0-alpine3.20 as base
 ENV NO_UPDATE_NOTIFIER=true
 
 FROM base as build
