@@ -27,7 +27,7 @@
     "lint": "eslint"
   },
   "dependencies": {
-    "@restorecommerce/grpc-client": "^2.2.1",
+    "@restorecommerce/grpc-client": "^2.2.4",
     "@restorecommerce/logger": "^1.2.10",
     "@restorecommerce/rc-grpc-clients": "^5.1.29",
     "@restorecommerce/service-config": "^1.0.12",
