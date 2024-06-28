@@ -224,6 +224,19 @@ describe('search', () => {
         values: ['John Doe']
       });
     });
+
+    it('should not find a missing user', async () => {
+      const response = await new Promise<SearchResponse>(r => {
+        const client = getClient(true);
+        client.search('cn=Mary,ou=users,' + server.cfg.get('ldap:base_dn'), {}, async (err, res) => {
+          r(await readResponse(res));
+        })
+      });
+
+      expect(response.error).toBe(undefined);
+      expect(response.entries).not.toBe(undefined);
+      expect(response.entries).lengthOf(0);
+    });
   });
 
   describe('group', () => {
@@ -261,6 +274,19 @@ describe('search', () => {
           'cn=bar,ou=users,' + server.cfg.get('ldap:base_dn')
         ]
       });
+    });
+
+    it('should not find a missing group', async () => {
+      const response = await new Promise<SearchResponse>(r => {
+        const client = getClient(true);
+        client.search('cn=Builder,ou=groups,' + server.cfg.get('ldap:base_dn'), {}, async (err, res) => {
+          r(await readResponse(res));
+        })
+      });
+
+      expect(response.error).toBe(undefined);
+      expect(response.entries).not.toBe(undefined);
+      expect(response.entries).lengthOf(0);
     });
   });
 });

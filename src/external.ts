@@ -11,7 +11,7 @@ export const getUsers = async (ctx: Context, name?: string): Promise<any[]> => {
   }).catch(() => UserListResponse.fromPartial({}));
 
   if (!userList || !userList.items || userList.items.length === 0) {
-    return;
+    return [];
   }
 
   const allRoles = await ctx.roleClient.read({
@@ -78,7 +78,7 @@ export const getGroups = async (ctx: Context, name?: string): Promise<any[]> => 
   }
 
   if (!roleList || !roleList.items || roleList.items.length === 0) {
-    return;
+    return [];
   }
 
   const allUsers = await ctx.userClient.read({
