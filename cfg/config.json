@@ -10,6 +10,9 @@
   "client": {
     "user": {
       "address": "localhost:50051"
+    },
+    "role": {
+      "address": "localhost:50051"
     }
   },
   "ldap": {
@@ -28,7 +31,8 @@
       "password",
       "passwordHash"
     ],
-    "user_cn_field": "name"
+    "user_cn_field": "name",
+    "group_cn_field": "name"
   },
   "authentication": {
     "apiKey": "HELLO"

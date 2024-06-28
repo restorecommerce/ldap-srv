@@ -18,6 +18,9 @@
   "client": {
     "user": {
       "address": "identity-srv:50051"
+    },
+    "role": {
+      "address": "identity-srv:50051"
     }
   }
 }

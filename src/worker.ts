@@ -6,9 +6,12 @@ import { wrapLogger } from './logger.js';
 import { mountPaths } from './ldap.js';
 import { createClient, createChannel } from '@restorecommerce/grpc-client';
 import {
-  UserServiceClient,
   UserServiceDefinition
 } from '@restorecommerce/rc-grpc-clients/dist/generated/io/restorecommerce/user.js';
+import {
+  RoleServiceDefinition
+} from '@restorecommerce/rc-grpc-clients/dist/generated/io/restorecommerce/role.js';
+import { Context } from "./utils.js";
 
 export class Worker {
 
@@ -16,7 +19,7 @@ export class Worker {
   public readonly logger: Logger;
 
   public server: ldap.Server;
-  public ids: UserServiceClient;
+  public ctx: Context;
 
   constructor() {
     this.cfg = createServiceConfig(process.cwd());
@@ -30,12 +33,23 @@ export class Worker {
       key: this.cfg.get('ldap:tls:key')
     });
 
-    const channel = createChannel(this.cfg.get('client:user:address'));
-    this.ids = createClient({
+    const userClient = createClient({
       logger: this.logger,
-    }, UserServiceDefinition, channel)
+    }, UserServiceDefinition, createChannel(this.cfg.get('client:user:address')));
 
-    mountPaths(this.cfg, this.server, this.ids, this.logger);
+    const roleClient = createClient({
+      logger: this.logger,
+    }, RoleServiceDefinition, createChannel(this.cfg.get('client:role:address')));
+
+    this.ctx = {
+      cfg: this.cfg,
+      logger: this.logger,
+      server: this.server,
+      userClient,
+      roleClient
+    };
+
+    mountPaths(this.ctx);
 
     await new Promise<void>((r) => {
       this.server.listen(this.cfg.get('ldap:port'), this.cfg.get('ldap:host'), () => {

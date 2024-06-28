@@ -1,11 +1,10 @@
-import { Provider } from "nconf";
 import { default as ldapjs } from "ldapjs";
-import { User, UserServiceClient } from "@restorecommerce/rc-grpc-clients/dist/generated/io/restorecommerce/user.js";
-import { Logger } from "@restorecommerce/logger";
+import { User } from "@restorecommerce/rc-grpc-clients/dist/generated/io/restorecommerce/user.js";
+import { Context } from "./utils.js";
 
-export const testCredentials = async (cfg: Provider, dn: ldapjs.DN, credentials: string, ids: UserServiceClient, logger: Logger): Promise<boolean> => {
-  const bindDN = ldapjs.parseDN(cfg.get('ldap:bind:dn') + ',' + cfg.get('ldap:base_dn'));
-  if (bindDN.equals(dn) && (credentials === cfg.get('ldap:bind:password').toString() || credentials === null)) {
+export const testCredentials = async (ctx: Context, dn: ldapjs.DN, credentials: string): Promise<boolean> => {
+  const bindDN = ldapjs.parseDN(ctx.cfg.get('ldap:bind:dn') + ',' + ctx.cfg.get('ldap:base_dn'));
+  if (bindDN.equals(dn) && (credentials === ctx.cfg.get('ldap:bind:password').toString() || credentials === null)) {
     return true;
   }
 
@@ -23,21 +22,21 @@ export const testCredentials = async (cfg: Provider, dn: ldapjs.DN, credentials:
 
   let user: User | undefined;
   if (credentials !== null) {
-    user = await ids.login({
+    user = await ctx.userClient.login({
       password: credentials,
       identifier
     }).then(u => u.payload).catch((err) => {
-      logger.error('failed logging in', err);
+      ctx.logger.error('failed logging in', err);
       return undefined;
     });
   } else {
-    const users = await ids.find({
+    const users = await ctx.userClient.find({
       subject: {
-        token: cfg.get('authentication:apiKey')
+        token: ctx.cfg.get('authentication:apiKey')
       },
       name: identifier
     }).catch((err) => {
-      logger.error('failed logging in', err);
+      ctx.logger.error('failed logging in', err);
       return undefined;
     });
 
@@ -47,9 +46,9 @@ export const testCredentials = async (cfg: Provider, dn: ldapjs.DN, credentials:
   return !!user;
 };
 
-export const authorize = (cfg: Provider, ids: UserServiceClient, logger: Logger) => {
+export const authorize = (ctx: Context) => {
   return async (req: any, res: any, next: any) => {
-    if (await testCredentials(cfg, req.connection.ldap.bindDN, null, ids, logger)) {
+    if (await testCredentials(ctx, req.connection.ldap.bindDN, null)) {
       return next();
     }
     return next(new ldapjs.InsufficientAccessRightsError());

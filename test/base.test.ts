@@ -9,8 +9,6 @@ let server: Worker;
 const MOCK_USERNAME = "testUser";
 const MOCK_PASSWORD  = "testPassword";
 
-// const spyFind = vi.spyOn(server.ids, 'find');
-
 const getClient = (valid = false) => {
   return ldapjs.createClient({
     url: [server.server.url],
@@ -23,13 +21,14 @@ const getClient = (valid = false) => {
 beforeAll(async () => {
   server = new Worker();
   await server.start();
+  mockFind(server);
 });
 
 afterAll(async () => {
   server.stop();
 });
 
-describe('binding', () => {
+describe('bind', () => {
   it('should fail with wrong user', async () => {
     const err = await new Promise<ldapjs.Error | null>(r => {
       getClient().bind('cn=hello', undefined, (err) => {
@@ -86,115 +85,182 @@ describe('binding', () => {
 });
 
 describe('search', () => {
-  it('should find root', async () => {
-    const response = await new Promise<SearchResponse>(r => {
-      const client = getClient(true);
-      client.search('', {}, async (err, res) => {
-        r(await readResponse(res));
-      })
+  describe('base', () => {
+    it('should find root', async () => {
+      const response = await new Promise<SearchResponse>(r => {
+        const client = getClient(true);
+        client.search('', {}, async (err, res) => {
+          r(await readResponse(res));
+        })
+      });
+
+      expect(response.error).toBe(undefined);
+      expect(response.entries).not.toBe(undefined);
+      expect(response.entries[0].attributes).toContainEqual({
+        type: 'namingContexts',
+        values: [server.cfg.get('ldap:base_dn')]
+      });
     });
 
-    expect(response.error).toBe(undefined);
-    expect(response.entries).not.toBe(undefined);
-    expect(response.entries[0].attributes).toContainEqual({
-      type: 'namingContexts',
-      values: [server.cfg.get('ldap:base_dn')]
-    });
-  });
+    it('should find cn=subschema', async () => {
+      const response = await new Promise<SearchResponse>(r => {
+        const client = getClient(true);
+        client.search('cn=subschema', {}, async (err, res) => {
+          r(await readResponse(res));
+        })
+      });
 
-  it('should find cn=subschema', async () => {
-    const response = await new Promise<SearchResponse>(r => {
-      const client = getClient(true);
-      client.search('cn=subschema', {}, async (err, res) => {
-        r(await readResponse(res));
-      })
-    });
-
-    expect(response.error).toBe(undefined);
-    expect(response.entries).not.toBe(undefined);
-    expect(response.entries[0].attributes).toContainEqual({
-      type: 'objectClass',
-      values: ['top', 'subSchema']
-    });
-  });
-
-  it('should find base', async () => {
-    const response = await new Promise<SearchResponse>(r => {
-      const client = getClient(true);
-      client.search(server.cfg.get('ldap:base_dn'), {}, async (err, res) => {
-        r(await readResponse(res));
-      })
+      expect(response.error).toBe(undefined);
+      expect(response.entries).not.toBe(undefined);
+      expect(response.entries[0].attributes).toContainEqual({
+        type: 'objectClass',
+        values: ['top', 'subSchema']
+      });
     });
 
-    expect(response.error).toBe(undefined);
-    expect(response.entries).not.toBe(undefined);
-    expect(response.entries[0].attributes).toContainEqual({
-      type: 'namingContexts',
-      values: [server.cfg.get('ldap:base_dn')]
-    });
-  });
+    it('should find base', async () => {
+      const response = await new Promise<SearchResponse>(r => {
+        const client = getClient(true);
+        client.search(server.cfg.get('ldap:base_dn'), {}, async (err, res) => {
+          r(await readResponse(res));
+        })
+      });
 
-  it('should find base children', async () => {
-    const response = await new Promise<SearchResponse>(r => {
-      const client = getClient(true);
-      client.search(server.cfg.get('ldap:base_dn'), {scope: 'one'}, async (err, res) => {
-        r(await readResponse(res));
-      })
-    });
-
-    expect(response.error).toBe(undefined);
-    expect(response.entries).not.toBe(undefined);
-    expect(response.entries[0].attributes).toContainEqual({
-      type: 'commonName',
-      values: ['users']
-    });
-  });
-
-  it('should find list of users', async () => {
-    const response = await new Promise<SearchResponse>(r => {
-      mockFind(server);
-      const client = getClient(true);
-      client.search('ou=users,' + server.cfg.get('ldap:base_dn'), {scope: 'one'}, async (err, res) => {
-        r(await readResponse(res));
-      })
+      expect(response.error).toBe(undefined);
+      expect(response.entries).not.toBe(undefined);
+      expect(response.entries[0].attributes).toContainEqual({
+        type: 'namingContexts',
+        values: [server.cfg.get('ldap:base_dn')]
+      });
     });
 
-    expect(response.error).toBe(undefined);
-    expect(response.entries).not.toBe(undefined);
-    expect(response.entries[0].objectName).toEqual('cn=foo,ou=users,' + server.cfg.get('ldap:base_dn'));
-  });
+    it('should find base children', async () => {
+      const response = await new Promise<SearchResponse>(r => {
+        const client = getClient(true);
+        client.search(server.cfg.get('ldap:base_dn'), {scope: 'one'}, async (err, res) => {
+          r(await readResponse(res));
+        })
+      });
 
-  it('should find a single user', async () => {
-    const response = await new Promise<SearchResponse>(r => {
-      mockFind(server);
-      const client = getClient(true);
-      client.search('cn=bar,ou=users,' + server.cfg.get('ldap:base_dn'), {}, async (err, res) => {
-        r(await readResponse(res));
-      })
+      expect(response.error).toBe(undefined);
+      expect(response.entries).not.toBe(undefined);
+      expect(response.entries[0].attributes).toContainEqual({
+        type: 'commonName',
+        values: ['users']
+      });
+      expect(response.entries[1].attributes).toContainEqual({
+        type: 'commonName',
+        values: ['groups']
+      });
     });
 
-    expect(response.error).toBe(undefined);
-    expect(response.entries).not.toBe(undefined);
-    expect(response.entries[0].attributes).toContainEqual({
-      type: 'displayName',
-      values: ['John Doe']
+    it('should find all sub-items', async () => {
+      const response = await new Promise<SearchResponse>(r => {
+        const client = getClient(true);
+        client.search(server.cfg.get('ldap:base_dn'), {
+          scope: 'sub'
+        }, async (err, res) => {
+          r(await readResponse(res));
+        })
+      });
+
+      console.log(response.entries)
+      expect(response.error).toBe(undefined);
+      expect(response.entries).not.toBe(undefined);
+      expect(response.entries).lengthOf(9);
     });
   });
 
-  it('should find all sub-items', async () => {
-    const response = await new Promise<SearchResponse>(r => {
-      mockFind(server);
-      const client = getClient(true);
-      client.search(server.cfg.get('ldap:base_dn'), {
-        scope: 'sub'
-      }, async (err, res) => {
-        r(await readResponse(res));
-      })
+  describe('user', () => {
+    it('should find list of users', async () => {
+      const response = await new Promise<SearchResponse>(r => {
+        const client = getClient(true);
+        client.search('ou=users,' + server.cfg.get('ldap:base_dn'), {scope: 'one'}, async (err, res) => {
+          r(await readResponse(res));
+        })
+      });
+
+      expect(response.error).toBe(undefined);
+      expect(response.entries).not.toBe(undefined);
+      expect(response.entries[0].objectName).toEqual('cn=bar,ou=users,' + server.cfg.get('ldap:base_dn'));
     });
 
-    console.log(response.entries)
-    expect(response.error).toBe(undefined);
-    expect(response.entries).not.toBe(undefined);
-    expect(response.entries).lengthOf(5);
+    it('should find a single user', async () => {
+      const response = await new Promise<SearchResponse>(r => {
+        const client = getClient(true);
+        client.search('cn=bar,ou=users,' + server.cfg.get('ldap:base_dn'), {}, async (err, res) => {
+          r(await readResponse(res));
+        })
+      });
+
+      expect(response.error).toBe(undefined);
+      expect(response.entries).not.toBe(undefined);
+      expect(response.entries[0].attributes).toContainEqual({
+        type: 'displayName',
+        values: ['John Doe']
+      });
+      expect(response.entries[0].attributes).toContainEqual({
+        type: 'memberOf',
+        values: ['cn=User,ou=groups,' + server.cfg.get('ldap:base_dn')]
+      });
+    });
+
+    it('should filter users by group', async () => {
+      const response = await new Promise<SearchResponse>(r => {
+        const client = getClient(true);
+        client.search('ou=users,' + server.cfg.get('ldap:base_dn'), {
+          scope: 'sub',
+          filter: `(|(memberOf=cn=User,ou=groups,${server.cfg.get('ldap:base_dn')}))`
+        }, async (err, res) => {
+          r(await readResponse(res));
+        })
+      });
+
+      expect(response.error).toBe(undefined);
+      expect(response.entries).not.toBe(undefined);
+      expect(response.entries).lengthOf(2);
+      expect(response.entries[0].attributes).toContainEqual({
+        type: 'displayName',
+        values: ['John Doe']
+      });
+    });
+  });
+
+  describe('group', () => {
+    it('should find list of groups', async () => {
+      const response = await new Promise<SearchResponse>(r => {
+        const client = getClient(true);
+        client.search('ou=groups,' + server.cfg.get('ldap:base_dn'), {scope: 'one'}, async (err, res) => {
+          r(await readResponse(res));
+        })
+      });
+
+      expect(response.error).toBe(undefined);
+      expect(response.entries).not.toBe(undefined);
+      expect(response.entries[0].objectName).toEqual('cn=Admin,ou=groups,' + server.cfg.get('ldap:base_dn'));
+    });
+
+    it('should find a single group', async () => {
+      const response = await new Promise<SearchResponse>(r => {
+        const client = getClient(true);
+        client.search('cn=User,ou=groups,' + server.cfg.get('ldap:base_dn'), {}, async (err, res) => {
+          r(await readResponse(res));
+        })
+      });
+
+      expect(response.error).toBe(undefined);
+      expect(response.entries).not.toBe(undefined);
+      expect(response.entries[0].attributes).toContainEqual({
+        type: 'id',
+        values: ['user']
+      });
+      expect(response.entries[0].attributes).toContainEqual({
+        type: 'member',
+        values: [
+          'cn=foo,ou=users,' + server.cfg.get('ldap:base_dn'),
+          'cn=bar,ou=users,' + server.cfg.get('ldap:base_dn')
+        ]
+      });
+    });
   });
 });
