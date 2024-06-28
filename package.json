@@ -30,7 +30,7 @@
     "@restorecommerce/grpc-client": "^2.2.1",
     "@restorecommerce/logger": "^1.2.10",
     "@restorecommerce/rc-grpc-clients": "^5.1.29",
-    "@restorecommerce/service-config": "^1.0.12",
+    "@restorecommerce/service-config": "^1.0.15",
     "ldapjs": "^3.0.7",
     "nconf": "^0.12.1"
   },
