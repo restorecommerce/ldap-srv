@@ -27,32 +27,32 @@
     "lint": "eslint"
   },
   "dependencies": {
-    "@restorecommerce/grpc-client": "^2.2.1",
-    "@restorecommerce/logger": "^1.2.10",
-    "@restorecommerce/rc-grpc-clients": "^5.1.29",
-    "@restorecommerce/service-config": "^1.0.12",
+    "@restorecommerce/grpc-client": "2.2.5",
+    "@restorecommerce/logger": "1.3.2",
+    "@restorecommerce/rc-grpc-clients": "5.1.38",
+    "@restorecommerce/service-config": "1.0.16",
     "ldapjs": "^3.0.7",
     "nconf": "^0.12.1"
   },
   "devDependencies": {
-    "@restorecommerce/dev": "^0.0.12",
+    "@restorecommerce/dev": "0.0.13",
     "@semantic-release-plus/docker": "^3.1.3",
     "@types/ldapjs": "^3.0.6",
-    "@types/nconf": "^0.10.6",
-    "@typescript-eslint/eslint-plugin": "^7.12.0",
+    "@types/nconf": "0.10.7",
+    "@typescript-eslint/eslint-plugin": "8.13.0",
     "@typescript-eslint/eslint-plugin-tslint": "^7.0.2",
-    "@typescript-eslint/parser": "^7.12.0",
-    "@vitest/coverage-v8": "^1.6.0",
+    "@typescript-eslint/parser": "8.13.0",
+    "@vitest/coverage-v8": "2.1.4",
     "cross-env": "^7.0.3",
-    "esbuild": "^0.21.4",
-    "eslint": "^8.57.0",
-    "eslint-plugin-prefer-arrow-functions": "^3.3.2",
-    "nodemon": "^3.1.1",
+    "esbuild": "0.24.0",
+    "eslint": "9.14.0",
+    "eslint-plugin-prefer-arrow-functions": "3.4.1",
+    "nodemon": "3.1.7",
     "npm-run-all": "^4.1.5",
-    "rimraf": "^5.0.7",
+    "rimraf": "6.0.1",
     "ts-node": "^10.9.2",
-    "typescript": "^5.4.5",
-    "vitest": "^1.6.0"
+    "typescript": "5.6.3",
+    "vitest": "2.1.4"
   },
   "engines": {
     "node": ">= 22.0.0"
