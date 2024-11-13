@@ -45,7 +45,7 @@ export const getUsers = async (ctx: Context, name?: string): Promise<any[]> => {
     }
 
     // Some servers just want one of these
-    for (let idAttribute of ['entryuuid', 'nsuniqueid', 'objectguid', 'guid', 'ipauniqueid']) {
+    for (const idAttribute of ['entryuuid', 'nsuniqueid', 'objectguid', 'guid', 'ipauniqueid']) {
       attributes[idAttribute] = user.payload.id;
     }
 
@@ -103,7 +103,7 @@ export const getGroups = async (ctx: Context, name?: string): Promise<any[]> => 
     });
 
     // Some servers just want one of these
-    for (let idAttribute of ['entryuuid', 'nsuniqueid', 'objectguid', 'guid', 'ipauniqueid']) {
+    for (const idAttribute of ['entryuuid', 'nsuniqueid', 'objectguid', 'guid', 'ipauniqueid']) {
       attributes[idAttribute] = role.payload.id;
     }
 

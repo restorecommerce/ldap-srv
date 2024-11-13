@@ -38,7 +38,7 @@ export const serializeKeys = <T>(obj: T): T => {
     ...obj
   };
 
-  for (let key of Object.keys(out)) {
+  for (const key of Object.keys(out)) {
     if (typeof out[key] === 'object') {
       if (Array.isArray(out[key])) {
         if (!(out[key].length > 0 && typeof out[key][0] !== 'object')) {

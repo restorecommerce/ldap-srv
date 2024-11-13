@@ -31,7 +31,7 @@ export const mountPaths = (ctx: Context) => {
  */
 const bind = (ctx: Context) => {
   ctx.server.bind(ctx.cfg.get('ldap:base_dn'), async (req: any, res: any, next: any) => {
-    let dn = (req.dn instanceof ldapjs.DN) ? req.dn : ldapjs.parseDN(req.dn);
+    const dn = (req.dn instanceof ldapjs.DN) ? req.dn : ldapjs.parseDN(req.dn);
     if (await testCredentials(ctx, dn, req.credentials)) {
       res.end();
       return next();
