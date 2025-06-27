@@ -40,6 +40,9 @@ export const getUsers = async (ctx: Context, name?: string): Promise<any[]> => {
 
     if (user.payload.roleAssociations && user.payload.roleAssociations.length > 0) {
       attributes.memberOf = user.payload.roleAssociations.map((assoc) => {
+        if (!(assoc.role in idToRole)) {
+          throw new Error(`Role ${assoc.role} does not exist. Found in user ${user.payload.name}`);
+        }
         return `cn=${(idToRole[assoc.role] as any)[ctx.cfg.get('ldap:group_cn_field')]},ou=groups,${ctx.cfg.get('ldap:base_dn')}`;
       });
     }
